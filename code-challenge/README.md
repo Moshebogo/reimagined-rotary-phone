@@ -68,11 +68,11 @@ python db/seed.py
 > If you aren't able to get the provided seed file working, you are welcome to
 > generate your own seed data to test the application.
 
-## Validations
+  ## Validations
 
-Add validations to the `RestaurantPizza` model:
+  Add validations to the `RestaurantPizza` model:
 
-- must have a `price` between 1 and 30
+  - must have a `price` between 1 and 30
 
 ## Routes
 

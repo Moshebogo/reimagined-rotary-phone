@@ -8,9 +8,7 @@ from models import db, Restaurant, Pizza, RestaurantPizza
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 migrate = Migrate(app, db)
-
 db.init_app(app)
 
 
@@ -76,7 +74,12 @@ def pizzas():
     
 @app.route('/restaurant_pizzas', methods = ['GET', 'POST'])
 def resaurant_pizzas():
-    if request.method == 'POST':
+    if request.method == 'GET':
+        rest_pizzas = RestaurantPizza.query.all()
+        rest_pizzas_to_dict = [rest_pizza.to_dict() for rest_pizza in rest_pizzas]
+        return make_response(jsonify(rest_pizzas_to_dict), 200)
+        
+    elif request.method == 'POST':
         data = request.get_json()
         new_rest_pizza = RestaurantPizza()
         for key in data:
@@ -84,11 +87,10 @@ def resaurant_pizzas():
         # checks if that pizza_id exists. If it does, adds it. otherwise, sends error.
         pizza_exists = Pizza.query.get(new_rest_pizza.pizza_id)
         if not pizza_exists:
-            return make_response(jsonify({'error': 'that pizza_iddoes not exist, not added to db'}))
+            return make_response(jsonify({'error': 'that pizza does not exist, not added to database'}), 400)
         db.session.add(new_rest_pizza)
         db.session.commit()
-        return make_response(jsonify(pizza_exists.to_dist()), 201) 
-
+        return make_response(jsonify(pizza_exists.to_dict()), 201) 
 
 if __name__ == '__main__':
     app.run(port=5555)
