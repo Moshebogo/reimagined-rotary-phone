@@ -11,10 +11,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 migrate = Migrate(app, db)
 db.init_app(app)
 
-
 @app.route('/')
 def home():
-    pass
+    return ''
 
 @app.route('/restaurants', methods= ['GET', 'POST'])
 def restaurants():
@@ -35,11 +34,12 @@ def restaurants():
 @app.route('/restaurants/<int:id>', methods = ['GET', 'PATCH', 'DELETE'])
 def restaurant_by_id(id):
     restaurant = Restaurant.query.get(id)
+    print(restaurant)
     if not restaurant:
-        return make_response(jsonify({'error': 'that restaraunt does not exist'}), 400)
+        return make_response(jsonify({'error': 'Restaurant not found'}), 400)
     
     elif request.method =='GET':    
-        return make_response(jsonify(restaurant.to_dict()), 200)
+        return make_response(jsonify(restaurant.res_and_pizza_to_dict()), 200)
     
     elif request.method == 'PATCH':
         data = request.get_json()
@@ -54,8 +54,6 @@ def restaurant_by_id(id):
         db.session.commit()
         return make_response(jsonify({'status': 'DELETE successful'}), 200)
         
-        
-
 @app.route('/pizzas', methods = ['GET', 'POST'])
 def pizzas():
     if request.method == 'GET':
@@ -86,11 +84,12 @@ def resaurant_pizzas():
             setattr(new_rest_pizza, key, data[key])
         # checks if that pizza_id exists. If it does, adds it. otherwise, sends error.
         pizza_exists = Pizza.query.get(new_rest_pizza.pizza_id)
-        if not pizza_exists:
-            return make_response(jsonify({'error': 'that pizza does not exist, not added to database'}), 400)
+        restaurant_exists = Restaurant.query.get(new_rest_pizza.restaurant_id)
+        if not pizza_exists or not restaurant_exists:
+            return make_response(jsonify({'error': 'pizza / restaurant does not exist, not added to database'}), 400)
         db.session.add(new_rest_pizza)
         db.session.commit()
         return make_response(jsonify(pizza_exists.to_dict()), 201) 
 
 if __name__ == '__main__':
-    app.run(port=5555)
+    app.run(port=3000)
