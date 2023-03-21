@@ -16,13 +16,13 @@ class Restaurant(db.Model):
         return {'id': self.id,
                 'name': self.name,
                 'address': self.address}
-        
+
     def res_and_pizza_to_dict(self):
-        pizzas = Pizza.query.all()
+        pizzas = [rp.pizza for rp in self.restaurant_pizzas]
         return {'id': self.id,
                 'name': self.name,
                 'address': self.address,
-                'pizzas': [pizza.to_dict() for pizza in RestaurantPizza.query.filter(RestaurantPizza.restaurant_id == self.id).all()]}
+                'pizzas': [pizza.to_dict() for pizza in pizzas]}
 
 class Pizza(db.Model):
     __tablename__ = 'pizzas'

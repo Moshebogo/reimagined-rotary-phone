@@ -92,4 +92,4 @@ def resaurant_pizzas():
         return make_response(jsonify(pizza_exists.to_dict()), 201) 
 
 if __name__ == '__main__':
-    app.run(port=3000)
+    app.run(port=7000)
