@@ -8,88 +8,64 @@ from models import db, Restaurant, Pizza, RestaurantPizza
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 migrate = Migrate(app, db)
+
 db.init_app(app)
+
 
 @app.route('/')
 def home():
     return ''
 
-@app.route('/restaurants', methods= ['GET', 'POST'])
+@app.route('/restaurants', methods = ['GET'])
 def restaurants():
-    if request.method == 'GET':
-        restaraunts = Restaurant.query.all()
-        restaurants_to_dict = [restaurant.to_dict() for restaurant in restaraunts] 
-        return make_response(jsonify(restaurants_to_dict), 200)
-        
-    elif request.method =='POST':
-        data = request.get_json()
-        new_restaraunt = Restaurant()
-        for key in data:
-            setattr(new_restaraunt, key, data[key])
-        db.session.add(new_restaraunt)
-        db.session.commit()
-        return make_response(jsonify(new_restaraunt.to_dict()), 201)
+    rests = Restaurant.query.all()
+    rests_to_dict = [rest.to_dict() for rest in rests]
+    return make_response(jsonify(rests_to_dict), 200)
 
-@app.route('/restaurants/<int:id>', methods = ['GET', 'PATCH', 'DELETE'])
+@app.route('/restaurants/<int:id>', methods = ['GET', 'DELETE'])
 def restaurant_by_id(id):
-    restaurant = Restaurant.query.get(id)
-    print(restaurant)
-    if not restaurant:
-        return make_response(jsonify({'error': 'Restaurant not found'}), 400)
+    rest = Restaurant.query.get(id)
+    if not rest:
+        return make_response(jsonify({"error": "Restaurant not found"}), 404)
+    if request.method == 'GET':
+        rest_to_dict = rest.with_pizza_to_dict()
+        return make_response(jsonify(rest_to_dict), 200)
     
-    elif request.method =='GET':    
-        return make_response(jsonify(restaurant.res_and_pizza_to_dict()), 200)
-    
-    elif request.method == 'PATCH':
-        data = request.get_json()
-        for key in data:
-            setattr(restaurant, key, data[key])
-        db.session.add(restaurant)
-        db.session.commit() 
-        return make_response(jsonify(restaurant.to_dict()), 200)  
-
     elif request.method == 'DELETE':
-        db.session.delete(restaurant)
+        rps =  RestaurantPizza.query.filter(RestaurantPizza.id == rest.id).all()
+        for row in rps:
+            db.session.delete(row)
+        db.session.delete(rest)
         db.session.commit()
-        return make_response(jsonify({'status': 'DELETE successful'}), 200)
-        
-@app.route('/pizzas', methods = ['GET', 'POST'])
+        return make_response(jsonify({"": ""}), 200)
+    
+
+@app.route('/pizzas', methods = ['GET'])
 def pizzas():
-    if request.method == 'GET':
-        pizzas = Pizza.query.all()
-        pizzas_to_dict = [pizza.to_dict() for pizza in pizzas]
-        return make_response(jsonify(pizzas_to_dict), 200)
-    
-    elif request.method == 'POST':
+    pizzas = Pizza.query.all()
+    pizzas_to_dict = [pizza.to_dict() for pizza in pizzas]  
+    return make_response(jsonify(pizzas_to_dict), 200)
+
+@app.route('/restaurant_pizzas', methods = ['POST'])
+def restaurant_pizzas():
+
+    if request.method == 'POST':
         data = request.get_json()
-        new_pizza = Pizza()
+        new_rest_and_pizza = RestaurantPizza()
         for key in data:
-            setattr(new_pizza, key, data[key])
-        db.session.add(new_pizza)   
+            setattr(new_rest_and_pizza, key, data[key])
+        # check if rest exists, if yes, adds to database. Otherwise, says "that pizza / restaurant does not exist"
+        rest_exists = Restaurant.query.get(new_rest_and_pizza.restaurant_id)  
+        pizza_exists = Pizza.query.get(new_rest_and_pizza.pizza_id)
+        if not rest_exists or not pizza_exists:
+            return make_response(jsonify({"error": "that pizza / restaurant does not exist"}), 404)
+        # if rest_exists and pizza_exists
+        db.session.add(new_rest_and_pizza)
         db.session.commit()
-        return make_response(jsonify(new_pizza.to_dict()), 201) 
-    
-@app.route('/restaurant_pizzas', methods = ['GET', 'POST'])
-def resaurant_pizzas():
-    if request.method == 'GET':
-        rest_pizzas = RestaurantPizza.query.all()
-        rest_pizzas_to_dict = [rest_pizza.to_dict() for rest_pizza in rest_pizzas]
-        return make_response(jsonify(rest_pizzas_to_dict), 200)
-        
-    elif request.method == 'POST':
-        data = request.get_json()
-        new_rest_pizza = RestaurantPizza()
-        for key in data:
-            setattr(new_rest_pizza, key, data[key])
-        # checks if that pizza_id exists. If it does, adds it. otherwise, sends error.
-        pizza_exists = Pizza.query.get(new_rest_pizza.pizza_id)
-        restaurant_exists = Restaurant.query.get(new_rest_pizza.restaurant_id)
-        if not pizza_exists or not restaurant_exists:
-            return make_response(jsonify({'error': 'pizza / restaurant does not exist, not added to database'}), 400)
-        db.session.add(new_rest_pizza)
-        db.session.commit()
-        return make_response(jsonify(pizza_exists.to_dict()), 201) 
+    return make_response(jsonify(pizza_exists.to_dict()), 201)
+
 
 if __name__ == '__main__':
-    app.run(port=7000)
+    app.run(port=5555)
